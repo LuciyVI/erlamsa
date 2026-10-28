@@ -128,4 +128,13 @@ weight_and_strategy_validation_test() ->
     ?assertMatch({error,_},erlamsa_core:prepare(#{operators=>[{byte_flip,1},{byte_flip,2}]},limits())),
     ?assertMatch({error,_},erlamsa_core:prepare(#{strategy=>unknown},limits())).
 
+pattern_combinations_are_bounded_test() ->
+    C=prepare(#{operators=>[{byte_flip,1}]}),
+    R=(request(byte_flip))#{pattern=>[once,burst],budget=>3},
+    {ok,Out,Meta}=erlamsa_core:mutate(<<1,2,3,4,5,6,7,8>>,R,C),
+    ?assertNotEqual(<<1,2,3,4,5,6,7,8>>,Out),
+    ?assertEqual([once,burst],maps:get(pattern,Meta)),
+    ?assert(maps:get(operations_used,Meta)=<3),
+    ?assertEqual({skip,pattern_skip},erlamsa_core:mutate(<<1,2>>,R#{pattern=>[once,skip]},C)).
+
 prepare_with(Options,Limits) -> {ok,C}=erlamsa_core:prepare(Options,Limits),C.

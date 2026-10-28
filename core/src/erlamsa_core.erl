@@ -90,8 +90,7 @@ select_operator(Op, _Options, Rng) -> {Op, Rng}.
 
 select_pattern(auto, Options, Rng) -> weighted(maps:get(patterns, Options), Rng);
 select_pattern(Pattern, _Options, Rng) when is_atom(Pattern) -> {Pattern, Rng};
-select_pattern(Patterns, _Options, Rng) when is_list(Patterns) ->
-    erlamsa_core_rng:choose(Patterns, Rng).
+select_pattern(Patterns, _Options, Rng) when is_list(Patterns) -> {Patterns,Rng}.
 
 select_strategy(auto, Strategy, Rng) -> select_strategy(Strategy, Strategy, Rng);
 select_strategy(mixed, _Configured, Rng) ->
@@ -100,6 +99,11 @@ select_strategy(mixed, _Configured, Rng) ->
 select_strategy(preserve, _Configured, Rng) -> {preserve, Rng};
 select_strategy(perturb, _Configured, Rng) -> {perturb, Rng}.
 
+repetition_count(Patterns, Budget, Max, Rng) when is_list(Patterns) ->
+    case lists:member(skip,Patterns) of
+        true -> {0,Rng};
+        false -> pattern_count_list(Patterns,Budget,Max,Rng,0)
+    end;
 repetition_count(once, _Budget, _Max, Rng) -> {1, Rng};
 repetition_count(skip, _Budget, _Max, Rng) -> {0, Rng};
 repetition_count(many, Budget, Max, Rng) ->
@@ -109,6 +113,13 @@ repetition_count(burst, Budget, Max, Rng) ->
     {N, Next} = erlamsa_core_rng:uniform(Max, Rng),
     {min(Budget, N), Next};
 repetition_count(_, _, _, Rng) -> {0, Rng}.
+
+pattern_count_list([], _Budget, _Max, Rng, Count) -> {Count,Rng};
+pattern_count_list(_Patterns, 0, _Max, Rng, Count) -> {Count,Rng};
+pattern_count_list(_Patterns, _Budget, 0, Rng, Count) -> {Count,Rng};
+pattern_count_list([Pattern|Rest], Budget, Max, Rng, Count) ->
+    {N,Next}=repetition_count(Pattern,min(Budget,Max),min(Budget,Max),Rng),
+    pattern_count_list(Rest,Budget-N,Max-N,Next,Count+N).
 
 weighted(Weights, Rng) ->
     Total = lists:sum([W || {_Name, W} <- Weights]),
