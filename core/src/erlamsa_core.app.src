@@ -1,0 +1,8 @@
+{application, erlamsa_core,
+ [{description, "Bounded deterministic local mutation core for EFZ"},
+  {vsn, "0.1.0"},
+  {modules, [erlamsa_core, erlamsa_core_bytes, erlamsa_core_fields,
+            erlamsa_core_json, erlamsa_core_ops, erlamsa_core_pack,
+            erlamsa_core_rng, erlamsa_core_sgml, erlamsa_core_tree]},
+  {registered, []},
+  {applications, [kernel, stdlib, crypto]}]}.
