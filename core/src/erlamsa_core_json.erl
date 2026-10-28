@@ -110,7 +110,22 @@ string(B,P) -> string(B,P,false).
 string(B,P,_) when P >= byte_size(B) -> throw(invalid_json);
 string(B,P,true) ->
     C=binary:at(B,P),
-    case C of $u -> string(B,min(P+5,byte_size(B)),false); _ -> string(B,P+1,false) end;
+    case C of
+        $u ->
+            true=P+4<byte_size(B),
+            Digits=binary:part(B,P+1,4),
+            true=lists:all(fun is_hex/1,binary_to_list(Digits)),
+            string(B,P+5,false);
+        $" -> string(B,P+1,false);
+        $\\ -> string(B,P+1,false);
+        $/ -> string(B,P+1,false);
+        $b -> string(B,P+1,false);
+        $f -> string(B,P+1,false);
+        $n -> string(B,P+1,false);
+        $r -> string(B,P+1,false);
+        $t -> string(B,P+1,false);
+        _ -> throw(invalid_json)
+    end;
 string(B,P,false) ->
     case binary:at(B,P) of
         $" -> {P+1,ok};
@@ -129,3 +144,6 @@ skip_ws(_B,P) -> P.
 
 byte_at(B,P) when P >= 0, P < byte_size(B) -> binary:at(B,P);
 byte_at(_B,_P) -> eof.
+
+is_hex(C) -> (C >= $0 andalso C =< $9) orelse (C >= $a andalso C =< $f) orelse
+             (C >= $A andalso C =< $F).
